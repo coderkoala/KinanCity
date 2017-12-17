@@ -31,7 +31,7 @@ import lombok.Setter;
 public class KcMessageHandler implements MessageHandler {
 
 	private static final String POKEMON_DOMAIN = "@pokemon.com";
-	private static final String ACTIVATION_EXP = "https://club.pokemon.com/us/pokemon-trainer-club/activated/.*";
+	private static final String ACTIVATION_EXP = "https://club.pokemon.com/([a-zA-Z\\-]+)/pokemon-trainer-club/activated/.*";
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -42,6 +42,8 @@ public class KcMessageHandler implements MessageHandler {
 
 	@Setter
 	private boolean acceptAllFrom = false;
+	
+	private String workLocale = "us";
 
 	/**
 	 * Construct with a given Link Activator
@@ -86,7 +88,14 @@ public class KcMessageHandler implements MessageHandler {
 				Matcher m = p.matcher(content);
 				if (m.find()) {
 					String activationLink = m.group(0);
+					String locale = m.group(1);
 					logger.info("Activation link found  for email {} : [{}]", this.recipient, activationLink);
+					
+					if(!locale.equals(workLocale)){
+						logger.info("Attemp converting activation link locale");
+						activationLink = activationLink.replace("/"+locale+"/", "/"+workLocale+"/");
+						logger.info("Activation link to use : [{}]", activationLink);
+					}
 
 					// Link activation, may be sync or async
 					activator.activateLink(new Activation(activationLink, this.recipient));
